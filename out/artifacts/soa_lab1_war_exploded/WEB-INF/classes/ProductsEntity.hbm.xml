@@ -1,0 +1,54 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+
+    <class name="entities.ProductsEntity" table="products" schema="public" catalog="soa">
+        <id name="id">
+            <column name="id" sql-type="bigint"/>
+        </id>
+        <property name="name">
+            <column name="name" sql-type="text" not-null="true"/>
+        </property>
+        <property name="coordinatesx">
+            <column name="coordinatesx" sql-type="integer" not-null="true"/>
+        </property>
+        <property name="coordinatesy">
+            <column name="coordinatesy" sql-type="bigint" not-null="true"/>
+        </property>
+        <property name="creationdate">
+            <column name="creationdate" sql-type="timestamp" not-null="true"/>
+        </property>
+        <property name="price">
+            <column name="price" sql-type="integer" not-null="true"/>
+        </property>
+        <property name="partnumber">
+            <column name="partnumber" sql-type="text" not-null="true"/>
+        </property>
+        <property name="manufacturecost">
+            <column name="manufacturecost" sql-type="double precision" precision="-1" not-null="true"/>
+        </property>
+        <property name="unitofmeasure">
+            <column name="unitofmeasure" sql-type="text" not-null="true"/>
+        </property>
+        <property name="ownername">
+            <column name="ownername" sql-type="text" not-null="true"/>
+        </property>
+        <property name="ownerweight">
+            <column name="ownerweight" sql-type="integer" not-null="true"/>
+        </property>
+        <property name="ownernationality">
+            <column name="ownernationality" sql-type="text" not-null="true"/>
+        </property>
+        <property name="ownerlocationx">
+            <column name="ownerlocationx" sql-type="real" precision="-1" not-null="true"/>
+        </property>
+        <property name="ownerlocationy">
+            <column name="ownerlocationy" sql-type="double precision" precision="-1" not-null="true"/>
+        </property>
+        <property name="ownerlocationz">
+            <column name="ownerlocationz" sql-type="double precision" precision="-1" not-null="true"/>
+        </property>
+    </class>
+</hibernate-mapping>
