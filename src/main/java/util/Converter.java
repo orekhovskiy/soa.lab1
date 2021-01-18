@@ -3,6 +3,9 @@ package util;
 import entities.ProductsEntity;
 import models.*;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -10,6 +13,8 @@ import javax.xml.bind.Unmarshaller;
 import java.io.BufferedReader;
 import java.io.Writer;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Converter {
     public static ProductsEntity modelToEntity(Product model) {
@@ -108,9 +113,19 @@ public class Converter {
         return (Product) unmarshaller.unmarshal(reader);
     }
 
-    public static void modelToXmlWriter(Product model, Writer writer) throws JAXBException{
-        JAXBContext context = JAXBContext.newInstance(Product.class);
+    public static <ModelType> void modelToXmlWriter(ModelType model, Writer writer, Class<ModelType> clazz) throws JAXBException{
+        JAXBContext context = JAXBContext.newInstance(clazz);
         Marshaller marshaller = context.createMarshaller();
         marshaller.marshal(model, writer);
+    }
+
+    public static Predicate[] pathParamsToPredicates(String pathParams, CriteriaBuilder cb, Root<ProductsEntity> root) {
+        List<Predicate> predicates = new ArrayList<Predicate>();
+        String[] pathParts = pathParams.split("/");
+        if (pathParts.length % 2 != 0) return new Predicate[]{};
+        for (int i = 0; i * 2 <= pathParts.length; i+= 2) {
+            predicates.add(cb.equal(root.get(pathParts[i]), pathParts[i + 1]));
+        }
+        return (Predicate[]) predicates.toArray();
     }
 }

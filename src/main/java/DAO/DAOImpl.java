@@ -1,13 +1,11 @@
 package DAO;
 
 import entities.ProductsEntity;
-import models.Product;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
+import util.Converter;
 import util.HibernateUtil;
 
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
@@ -32,14 +30,18 @@ public class DAOImpl {
         session.close();
     }
 
-    public List<ProductsEntity> getProducts(Predicate[] predicates, Integer pageNumber, Integer pageCapacity) {
+    public List<ProductsEntity> getProducts(String pathParams, Integer pageNumber, Integer pageCapacity) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<ProductsEntity> cr = cb.createQuery(ProductsEntity.class);
         Root<ProductsEntity> root = cr.from(ProductsEntity.class);
+        Predicate[] predicates = Converter.pathParamsToPredicates(pathParams, cb, root);
         cr.select(root).where(predicates);
-
         Query<ProductsEntity> query = session.createQuery(cr);
+        if (pageNumber != null && pageCapacity != null) {
+            query.setFirstResult((pageNumber - 1) * pageCapacity);
+            query.setMaxResults(pageCapacity);
+        }
         List<ProductsEntity> results = query.getResultList();
         session.close();
         return results;
