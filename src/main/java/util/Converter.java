@@ -103,14 +103,14 @@ public class Converter {
         return  model;
     }
 
-    public static Product xmlReaderToModel(BufferedReader reader) throws JAXBException {
+    public static <ModelType> ModelType xmlReaderToModel(BufferedReader reader, Class<ModelType> clazz) throws JAXBException {
         JAXBContext context;
         Unmarshaller unmarshaller;
 
-        context = JAXBContext.newInstance(Product.class);
+        context = JAXBContext.newInstance(clazz);
         unmarshaller = context.createUnmarshaller();
 
-        return (Product) unmarshaller.unmarshal(reader);
+        return (ModelType) unmarshaller.unmarshal(reader);
     }
 
     public static <ModelType> void modelToXmlWriter(ModelType model, Writer writer, Class<ModelType> clazz) throws JAXBException{

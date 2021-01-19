@@ -3,15 +3,13 @@ package servlets;
 import DAO.DAOImpl;
 import entities.ProductsEntity;
 import exceptions.WrongArgumentException;
+import models.Person;
 import models.Product;
 import models.ProductsList;
 import util.Converter;
 import util.ExceptionsUtil;
 import util.Validator;
 
-import javax.persistence.criteria.Predicate;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -22,16 +20,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProductsServlet extends HttpServlet {
-    private static final DAOImpl dao = new DAOImpl();
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
         // добавление нового
         Writer out = response.getWriter();
         BufferedReader reader = request.getReader();
         Product product;
         try {
-            product = Converter.xmlReaderToModel(reader);
+            product = Converter.xmlReaderToModel(reader, Product.class);
             product.setCreationDate(LocalDateTime.now());
             Validator.validate(product, false);
             ProductsEntity productsEntity = Converter.modelToEntity(product);
@@ -46,7 +43,7 @@ public class ProductsServlet extends HttpServlet {
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
 
         DAOImpl dao = new DAOImpl();
         Writer out = response.getWriter();
@@ -66,7 +63,6 @@ public class ProductsServlet extends HttpServlet {
         }
         // получение всех: GET /products
         else if (request.getPathInfo() == null || request.getPathInfo().equals("/")) {
-            Predicate[] predicates = {};
             Integer pageNumber = null, pageCapacity = null;
             List<ProductsEntity> entities = dao.getProducts(request.getPathInfo(), pageNumber, pageCapacity);
             ProductsList productsList = new ProductsList();
@@ -96,23 +92,57 @@ public class ProductsServlet extends HttpServlet {
     }
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException {
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        Writer out = response.getWriter();
+        DAOImpl dao = new DAOImpl();
+        BufferedReader reader = request.getReader();
         // удаление: DELETE /products (в боди объект)
+        if (request.getPathInfo() == null || request.getPathInfo().equals("/")) {
+            Product product;
+            try {
+                product = Converter.xmlReaderToModel(reader, Product.class);
+                ProductsEntity productsEntity = Converter.modelToEntity(product);
+                dao.deleteProduct(productsEntity);
+            }
+            catch (JAXBException e) {
+                response.setStatus(500);
+                out.write(e.getMessage());
+            }
+        }
         // удаление всех где есть овнер: DELETE /products/owner (в боди объект)
+        else if (request.getPathInfo().equals("/owner")) {
+            Person person;
+            try {
+                person = Converter.xmlReaderToModel(reader, Person.class);
+                dao.deleteAllProductWithPerson(person);
+            }
+            catch (JAXBException e) {
+                response.setStatus(500);
+                out.write(e.getMessage());
+            }
+        }
         // удалить любой где есть прайс: DELETE /products/price/{price}
-
+        else if (request.getPathInfo().startsWith("/price/")) {
+            int price = Integer.getInteger(request.getPathInfo().split("/")[1]);
+            dao.deleteProductWithPrice(price);
+        }
+        else {
+            response.setStatus(404);
+            out.write(ExceptionsUtil.getPageNotFoundException());
+        }
+        response.setStatus(204);
     }
 
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
         // обновление
         Product product;
         BufferedReader reader = request.getReader();
         Writer out = response.getWriter();
         try {
-            product = Converter.xmlReaderToModel(reader);
+            product = Converter.xmlReaderToModel(reader, Product.class);
             Validator.validate(product, true);
             DAOImpl dao = new DAOImpl();
             if (dao.getProductById(product.getId()) != null) {

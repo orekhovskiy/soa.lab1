@@ -1,6 +1,7 @@
 package DAO;
 
 import entities.ProductsEntity;
+import models.Person;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 import util.Converter;
@@ -71,11 +72,65 @@ public class DAOImpl {
         session.beginTransaction();
         Query query= session.createQuery("select product from ProductsEntity product where product.partnumber=:partNumber");
         query.setParameter("partNumber", partNumber);
+        ProductsEntity entity;
         try {
-            return (ProductsEntity) query.getSingleResult();
+            entity = (ProductsEntity) query.getSingleResult();
         }
         catch (Exception e) {
             return null;
         }
+        session.getTransaction().commit();
+        session.close();
+        return entity;
+    }
+
+    public void deleteProduct(ProductsEntity product) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        session.beginTransaction();
+        session.delete(product);
+        session.getTransaction().commit();
+        session.close();
+    }
+
+    public void deleteAllProductWithPerson(Person person) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        session.beginTransaction();
+        Query query= session.createQuery(
+                "select product from ProductsEntity product where " +
+                "product.ownername = :ownerName and " +
+                "product.ownerweight = :ownerWeight and " +
+                "product.ownernationality = :ownerNationality and " +
+                "product.ownerlocationx = :ownerLocationX and " +
+                "product.ownerlocationy = :ownerLocationY and " +
+                "product.ownerlocationz = :ownerLocationZ ")
+                .setParameter("ownerName", person.getName())
+                .setParameter("ownerWeight", person.getWeight())
+                .setParameter("ownerNationality", person.getNationality())
+                .setParameter("ownerLocationX", person.getLocation().getX())
+                .setParameter("ownerLocationY", person.getLocation().getY())
+                .setParameter("ownerLocationZ", person.getLocation().getZ());
+        ProductsEntity[] productsEntitiesList = (ProductsEntity[]) query.getResultList().toArray();
+        for (ProductsEntity entity: productsEntitiesList) {
+            session.delete(entity);
+        }
+        session.getTransaction().commit();
+        session.close();
+    }
+
+    public void deleteProductWithPrice(int price) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        session.beginTransaction();
+        Query query= session.createQuery(
+                "select product from ProductsEntity product where " +
+                "product.price = :price")
+                .setParameter("price", price);
+        try {
+            ProductsEntity entity = (ProductsEntity) query.getResultList().get(0);
+            session.delete(entity);
+
+        }
+        catch (Exception e) {}
+        session.getTransaction().commit();
+        session.close();
     }
 }
