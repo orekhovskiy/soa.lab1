@@ -1,26 +1,32 @@
 package DAO;
 
 import entities.ProductsEntity;
+import exceptions.OperationException;
 import models.Person;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 import util.Converter;
+import util.ExceptionsUtil;
 import util.HibernateUtil;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.persistence.EntityNotFoundException;
+import javax.persistence.criteria.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DAOImpl {
-    public ProductsEntity getProductById(long id){
+    public ProductsEntity getProductById(long id)
+            throws OperationException {
         Session session= HibernateUtil.getSessionFactory().openSession();
         session.beginTransaction();
         ProductsEntity productEntity = session.get(ProductsEntity.class, id);
         session.getTransaction().commit();
         session.close();
+        if (productEntity == null) {
+            throw new OperationException(ExceptionsUtil.getEntityWithGivenIdDoesNotExist());
+        }
         return productEntity;
+
     }
 
     public void addProduct(ProductsEntity entity) {
@@ -31,13 +37,25 @@ public class DAOImpl {
         session.close();
     }
 
-    public List<ProductsEntity> getProducts(String pathParams, Integer pageNumber, Integer pageCapacity) {
+    public List<ProductsEntity> getProducts(String pathParams, Integer pageNumber, Integer pageCapacity, String[] sortBy) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<ProductsEntity> cr = cb.createQuery(ProductsEntity.class);
         Root<ProductsEntity> root = cr.from(ProductsEntity.class);
         Predicate[] predicates = Converter.pathParamsToPredicates(pathParams, cb, root);
-        cr.select(root).where(predicates);
+        List<Order> orders = new ArrayList<>();
+        for(String column: sortBy) {
+            orders.add(cb.asc(root.get(column)));
+        }
+        if (predicates.length != 0) {
+            cr.select(root).where(predicates);
+        }
+        else {
+            cr.select(root);
+        }
+        if (orders.size() != 0) {
+            cr.orderBy(orders);
+        }
         Query<ProductsEntity> query = session.createQuery(cr);
         if (pageNumber != null && pageCapacity != null) {
             query.setFirstResult((pageNumber - 1) * pageCapacity);
@@ -84,52 +102,63 @@ public class DAOImpl {
         return entity;
     }
 
-    public void deleteProduct(ProductsEntity product) {
+    public void deleteProductById(long id)
+    throws OperationException{
         Session session = HibernateUtil.getSessionFactory().openSession();
         session.beginTransaction();
-        session.delete(product);
+        try {
+            ProductsEntity entity = session.load(ProductsEntity.class, id);
+            session.delete(entity);
+        }
+        catch (EntityNotFoundException e) {
+            throw new OperationException(ExceptionsUtil.getEntityWithGivenIdDoesNotExist());
+        }
         session.getTransaction().commit();
         session.close();
     }
 
-    public void deleteAllProductWithPerson(Person person) {
+    public void deleteAllProductWithPerson(Person person)
+        throws OperationException{
         Session session = HibernateUtil.getSessionFactory().openSession();
         session.beginTransaction();
         Query query= session.createQuery(
                 "select product from ProductsEntity product where " +
                 "product.ownername = :ownerName and " +
-                "product.ownerweight = :ownerWeight and " +
+                "((:ownerWeight is null and product.ownerweight is null) or product.ownerweight = :ownerWeight) and " +
                 "product.ownernationality = :ownerNationality and " +
                 "product.ownerlocationx = :ownerLocationX and " +
                 "product.ownerlocationy = :ownerLocationY and " +
                 "product.ownerlocationz = :ownerLocationZ ")
                 .setParameter("ownerName", person.getName())
                 .setParameter("ownerWeight", person.getWeight())
-                .setParameter("ownerNationality", person.getNationality())
+                .setParameter("ownerNationality", person.getNationality().name())
                 .setParameter("ownerLocationX", person.getLocation().getX())
                 .setParameter("ownerLocationY", person.getLocation().getY())
                 .setParameter("ownerLocationZ", person.getLocation().getZ());
-        ProductsEntity[] productsEntitiesList = (ProductsEntity[]) query.getResultList().toArray();
-        for (ProductsEntity entity: productsEntitiesList) {
+        List<ProductsEntity> matchedEntities = (List<ProductsEntity>) query.getResultList();
+        if (matchedEntities.size() == 0) {
+            throw new OperationException(ExceptionsUtil.getNoElementFound());
+        }
+        for (ProductsEntity entity: matchedEntities) {
             session.delete(entity);
         }
         session.getTransaction().commit();
         session.close();
     }
 
-    public void deleteProductWithPrice(int price) {
+    public void deleteProductWithPrice(Integer price) throws OperationException {
         Session session = HibernateUtil.getSessionFactory().openSession();
         session.beginTransaction();
         Query query= session.createQuery(
                 "select product from ProductsEntity product where " +
-                "product.price = :price")
+                "((:price is null and product.price is null) or product.price = :price)")
                 .setParameter("price", price);
-        try {
-            ProductsEntity entity = (ProductsEntity) query.getResultList().get(0);
-            session.delete(entity);
-
+        List<ProductsEntity> matchedEntities = (List<ProductsEntity>) query.getResultList();
+        if (matchedEntities.size() == 0) {
+            throw new OperationException(ExceptionsUtil.getNoElementFound());
         }
-        catch (Exception e) {}
+        ProductsEntity entity = matchedEntities.get(0);
+        session.delete(entity);
         session.getTransaction().commit();
         session.close();
     }

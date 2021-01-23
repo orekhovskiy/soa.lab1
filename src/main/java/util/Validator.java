@@ -3,33 +3,18 @@ package util;
 import DAO.DAOImpl;
 import entities.ProductsEntity;
 import exceptions.WrongArgumentException;
+import models.Person;
 import models.Product;
 import static util.ExceptionsUtil.*;
 
 public class Validator {
-    public static void validate(Product product, boolean toCheckId) throws WrongArgumentException{
+    public static void validateProduct(Product product, boolean toCheckId)
+            throws WrongArgumentException {
         // Coordinates
         if (product.getCoordinates() == null)
             throw new WrongArgumentException(getCouldNotBeNullException("Coordinates"));
         if (product.getCoordinates().getX() <= -965)
             throw new WrongArgumentException(getShouldBeGreaterException("Coordinates.X", "-965"));
-
-        // Owner
-        if (product.getOwner() != null) {
-            if (product.getOwner().getLocation() == null)
-                throw new WrongArgumentException(getCouldNotBeNullException("Owner.Location"));
-            if (product.getOwner().getLocation().getY() == null)
-                throw new WrongArgumentException(getCouldNotBeNullException("Owner.Location.Y"));
-            if (product.getOwner().getName() == null)
-                throw new WrongArgumentException(getCouldNotBeNullException("Owner.Name"));
-            if (product.getOwner().getName().equals(""))
-                throw new WrongArgumentException(getCouldNotBeEmptyException("Owner.Name"));
-            if (product.getOwner().getWeight() != null &&
-                    product.getOwner().getWeight() <= 0)
-                throw new WrongArgumentException(getShouldBeGreaterException("Owner.Weight", "0"));
-            if (product.getOwner().getNationality() == null)
-                throw new WrongArgumentException(getCouldNotBeNullException("Owner.Nationality"));
-        }
 
         // Id
         if (toCheckId) {
@@ -66,6 +51,28 @@ public class Validator {
             ProductsEntity entity = dao.getProductByPartNumber(product.getPartNumber());
             if (entity != null && entity.getId() != product.getId())
                 throw new WrongArgumentException(getArgumentIsNotUniqueException("PartNumber"));
+        }
+
+        // Owner
+        validatePerson(product.getOwner());
+    }
+
+    public static void validatePerson(Person owner)
+            throws WrongArgumentException{
+        if (owner != null) {
+            if (owner.getLocation() == null)
+                throw new WrongArgumentException(getCouldNotBeNullException("Owner.Location"));
+            if (owner.getLocation().getY() == null)
+                throw new WrongArgumentException(getCouldNotBeNullException("Owner.Location.Y"));
+            if (owner.getName() == null)
+                throw new WrongArgumentException(getCouldNotBeNullException("Owner.Name"));
+            if (owner.getName().equals(""))
+                throw new WrongArgumentException(getCouldNotBeEmptyException("Owner.Name"));
+            if (owner.getWeight() != null &&
+                    owner.getWeight() <= 0)
+                throw new WrongArgumentException(getShouldBeGreaterException("Owner.Weight", "0"));
+            if (owner.getNationality() == null)
+                throw new WrongArgumentException(getCouldNotBeNullException("Owner.Nationality"));
         }
     }
 }

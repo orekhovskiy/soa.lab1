@@ -20,4 +20,13 @@ public class ExceptionsUtil {
     public static String getArgumentIsNotUniqueException(String argumentName) {
         return String.format("Value of given argument '%s' is not unique", argumentName);
     }
+    public static String getNoElementFound() {
+        return "No element found by given attributes";
+    }
+    public static String getWrongTypeException(String argumentName, String requiredType) {
+        return String.format("Value of argument '%s' should be %s type", argumentName, requiredType);
+    }
+    public static String getInvalidDataException() {
+        return "Data given in body is invalid";
+    }
 }

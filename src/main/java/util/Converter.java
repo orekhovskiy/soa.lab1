@@ -110,7 +110,8 @@ public class Converter {
         context = JAXBContext.newInstance(clazz);
         unmarshaller = context.createUnmarshaller();
 
-        return (ModelType) unmarshaller.unmarshal(reader);
+        ModelType model = (ModelType) unmarshaller.unmarshal(reader);
+        return model;
     }
 
     public static <ModelType> void modelToXmlWriter(ModelType model, Writer writer, Class<ModelType> clazz) throws JAXBException{
@@ -122,7 +123,7 @@ public class Converter {
     public static Predicate[] pathParamsToPredicates(String pathParams, CriteriaBuilder cb, Root<ProductsEntity> root) {
         List<Predicate> predicates = new ArrayList<Predicate>();
         String[] pathParts = pathParams.split("/");
-        if (pathParts.length % 2 != 0) return new Predicate[]{};
+        if (pathParts.length % 2 != 0 || pathParts.length == 0) return new Predicate[]{};
         for (int i = 0; i * 2 <= pathParts.length; i+= 2) {
             predicates.add(cb.equal(root.get(pathParts[i]), pathParts[i + 1]));
         }
