@@ -1,6 +1,7 @@
 package util;
 
 import entities.ProductsEntity;
+import exceptions.OperationException;
 import models.*;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -15,6 +16,7 @@ import java.io.Writer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class Converter {
     public static ProductsEntity modelToEntity(Product model) {
@@ -120,13 +122,21 @@ public class Converter {
         marshaller.marshal(model, writer);
     }
 
-    public static Predicate[] pathParamsToPredicates(String pathParams, CriteriaBuilder cb, Root<ProductsEntity> root) {
+    public static List<Predicate> pathParamsToPredicates(String pathParams, CriteriaBuilder cb, Root<ProductsEntity> root)
+    throws  OperationException{
+        if (pathParams == null) return new ArrayList<>();
         List<Predicate> predicates = new ArrayList<Predicate>();
-        String[] pathParts = pathParams.split("/");
-        if (pathParts.length % 2 != 0 || pathParts.length == 0) return new Predicate[]{};
-        for (int i = 0; i * 2 <= pathParts.length; i+= 2) {
-            predicates.add(cb.equal(root.get(pathParts[i]), pathParts[i + 1]));
+        String[] pathParts = pathParams.substring(1).split("/");
+        if (pathParts.length % 2 != 0 || pathParts.length == 0) return new ArrayList<>();
+        for (int i = 0; i < pathParts.length; i+= 2) {
+            try {
+                predicates.add(cb.equal(root.get(pathParts[i].toLowerCase(Locale.ROOT).replace("-", "")), pathParts[i + 1]));
+            }
+            catch (Exception e) {
+                throw  new OperationException(ExceptionsUtil.getInvalidFilterArgumentException(pathParts[i]));
+            }
+
         }
-        return (Predicate[]) predicates.toArray();
+        return predicates;
     }
 }

@@ -29,4 +29,10 @@ public class ExceptionsUtil {
     public static String getInvalidDataException() {
         return "Data given in body is invalid";
     }
+    public static String getInvalidFilterArgumentException(String argumentName) {
+        return String.format("Filter argument '%s' is invalid", argumentName);
+    }
+    public static String getInvalidOrderArgumentException(String argumentName) {
+        return String.format("Order argument '%s' is invalid", argumentName);
+    }
 }

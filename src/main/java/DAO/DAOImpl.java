@@ -37,21 +37,27 @@ public class DAOImpl {
         session.close();
     }
 
-    public List<ProductsEntity> getProducts(String pathParams, Integer pageNumber, Integer pageCapacity, String[] sortBy) {
+    public List<ProductsEntity> getProducts(String pathParams, Integer pageNumber, Integer pageCapacity, String[] sortBy)
+        throws OperationException{
         Session session = HibernateUtil.getSessionFactory().openSession();
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<ProductsEntity> cr = cb.createQuery(ProductsEntity.class);
         Root<ProductsEntity> root = cr.from(ProductsEntity.class);
-        Predicate[] predicates = Converter.pathParamsToPredicates(pathParams, cb, root);
-        List<Order> orders = new ArrayList<>();
-        for(String column: sortBy) {
-            orders.add(cb.asc(root.get(column)));
-        }
-        if (predicates.length != 0) {
-            cr.select(root).where(predicates);
+        List<Predicate> predicates = Converter.pathParamsToPredicates(pathParams, cb, root);
+        if (predicates.size() != 0) {
+            cr.select(root).where(predicates.toArray(new Predicate[0]));
         }
         else {
             cr.select(root);
+        }
+        List<Order> orders = new ArrayList<>();
+        for(String column: sortBy) {
+            try {
+                orders.add(cb.asc(root.get(column)));
+            }
+            catch (Exception e) {
+                throw new OperationException(ExceptionsUtil.getInvalidOrderArgumentException(column));
+            }
         }
         if (orders.size() != 0) {
             cr.orderBy(orders);

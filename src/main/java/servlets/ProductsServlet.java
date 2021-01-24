@@ -49,14 +49,15 @@ public class ProductsServlet extends HttpServlet {
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-
         DAOImpl dao = new DAOImpl();
         response.setCharacterEncoding("UTF-8");
         Writer out = response.getWriter();
         // получение по ид: GET /products/id/{id}
-        if (request.getPathInfo() != null && request.getPathInfo().startsWith("/id/")) {
-            String idPart = request.getPathInfo().substring(4);
+        if (request.getPathInfo() != null &&
+            request.getPathInfo().startsWith("/id/") &&
+            request.getPathInfo().length() - request.getPathInfo().replace("/", "").length() == 2) {
             try {
+                String idPart = request.getPathInfo().substring(4);
                 long id = Long.parseLong(idPart);
                 ProductsEntity entity = dao.getProductById(id);
                 Product model = Converter.entityToModel(entity);
@@ -77,43 +78,44 @@ public class ProductsServlet extends HttpServlet {
                 out.write(e.getMessage());
             }
         }
-        // TODO: make it work properly
+        // расчет средней цены производителя : GET /products/manufacture-cost/average
+        else if (request.getPathInfo() != null &&
+                 request.getPathInfo().equals("/manufacture-cost/average")) {
+            response.setStatus(200);
+            out.write(String.valueOf(dao.getAverageManufactureCost()));
+        }
         // получение всех: GET /products
-        else if (request.getPathInfo() == null || request.getPathInfo().equals("/")) {
-            Integer pageNumber = null, pageCapacity = null;
-            String[] sortBy = request.getParameterValues("sort") == null
-                    ? new String[]{}
-                    : request.getParameterValues("sort");
+        else {
             try {
-                pageNumber = Integer.getInteger(request.getParameter("page-number"));
-                pageCapacity = Integer.getInteger(request.getParameter("page-capacity"));
-            }
-            catch (Exception ignored) { }
-            List<ProductsEntity> entities = dao.getProducts(request.getPathInfo(), pageNumber, pageCapacity, sortBy);
-            ProductsList productsList = new ProductsList();
-            List<Product> list = new ArrayList<>();
-            for (ProductsEntity entity: entities) {
-                list.add(Converter.entityToModel(entity));
-            }
-            productsList.setProducts(list);
-            try {
+                String[] sortBy = request.getParameterValues("sort") == null
+                        ? new String[]{}
+                        : request.getParameterValues("sort");
+                Integer pageNumber = request.getParameter("page-number") == null
+                        ? null
+                        : Integer.valueOf(request.getParameter("page-number"));
+                Integer pageCapacity = request.getParameter("page-capacity") == null
+                        ? null
+                        : Integer.valueOf(request.getParameter("page-capacity"));
+                if (pageNumber != null && pageNumber < 1) throw new WrongArgumentException(ExceptionsUtil.getShouldBeGreaterException("page-number", "0"));
+                List<ProductsEntity> entities = dao.getProducts(request.getPathInfo(), pageNumber, pageCapacity, sortBy);
+                ProductsList productsList = new ProductsList();
+                List<Product> list = new ArrayList<>();
+                for (ProductsEntity entity: entities) {
+                    list.add(Converter.entityToModel(entity));
+                }
+                productsList.setProducts(list);
                 response.setContentType("application/xml");
                 Converter.modelToXmlWriter(productsList, out, ProductsList.class);
                 response.setStatus(200);
+            }
+            catch (WrongArgumentException | OperationException e) {
+                response.setStatus(400);
+                out.write(e.getMessage());
             }
             catch (JAXBException e) {
                 response.setStatus(500);
                 out.write(e.getMessage());
             }
-        }
-        // расчет средней цены производителя : GET /products/manufacture-cost/average
-        else if (request.getPathInfo().equals("/manufacture-cost/average")) {
-            response.setStatus(200);
-            out.write(String.valueOf(dao.getAverageManufactureCost()));
-        }
-        else {
-            response.setStatus(404);
-            out.write(ExceptionsUtil.getPageNotFoundException());
         }
     }
 
