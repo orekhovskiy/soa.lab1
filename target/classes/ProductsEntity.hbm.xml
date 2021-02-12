@@ -4,7 +4,7 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping>
 
-    <class name="entities.ProductsEntity" table="products" schema="public" catalog="soa">
+    <class name="entities.ProductsEntity" table="products" schema="s225123" catalog="studs">
         <id name="id">
             <column name="id" sql-type="bigint"/>
             <generator class="increment"/>

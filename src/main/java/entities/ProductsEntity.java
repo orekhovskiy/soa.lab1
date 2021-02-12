@@ -5,7 +5,7 @@ import org.hibernate.annotations.Generated;
 import javax.persistence.*;
 import java.sql.Timestamp;
 
-@Table(name = "products", schema = "public", catalog = "soa")
+@Table(name = "products", schema = "s225123", catalog = "studs")
 public class ProductsEntity {
     private long id;
     private String name;

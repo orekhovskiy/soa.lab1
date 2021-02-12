@@ -2,6 +2,7 @@ package util;
 
 import entities.ProductsEntity;
 import exceptions.OperationException;
+import exceptions.WrongArgumentException;
 import models.*;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -123,11 +124,11 @@ public class Converter {
     }
 
     public static List<Predicate> pathParamsToPredicates(String pathParams, CriteriaBuilder cb, Root<ProductsEntity> root)
-    throws  OperationException{
-        if (pathParams == null) return new ArrayList<>();
+    throws  OperationException, WrongArgumentException{
+        if (pathParams == null || pathParams.equals("/")) return new ArrayList<>();
         List<Predicate> predicates = new ArrayList<Predicate>();
         String[] pathParts = pathParams.substring(1).split("/");
-        if (pathParts.length % 2 != 0 || pathParts.length == 0) return new ArrayList<>();
+        if (pathParts.length % 2 != 0 || pathParts.length == 0) throw new WrongArgumentException(ExceptionsUtil.getNoElementFoundByGivenPath());
         for (int i = 0; i < pathParts.length; i+= 2) {
             try {
                 predicates.add(cb.equal(root.get(pathParts[i].toLowerCase(Locale.ROOT).replace("-", "")), pathParts[i + 1]));

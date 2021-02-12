@@ -21,7 +21,10 @@ public class ExceptionsUtil {
         return String.format("Value of given argument '%s' is not unique", argumentName);
     }
     public static String getNoElementFound() {
-        return "No element found by given attributes";
+        return "No element found";
+    }
+    public static String getNoElementFoundByGivenPath() {
+        return "No element found by given path";
     }
     public static String getWrongTypeException(String argumentName, String requiredType) {
         return String.format("Value of argument '%s' should be %s type", argumentName, requiredType);
@@ -34,5 +37,8 @@ public class ExceptionsUtil {
     }
     public static String getInvalidOrderArgumentException(String argumentName) {
         return String.format("Order argument '%s' is invalid", argumentName);
+    }
+    public static String getPathParamsAreForbiddenException() {
+        return String.format("Path params are forbidden");
     }
 }

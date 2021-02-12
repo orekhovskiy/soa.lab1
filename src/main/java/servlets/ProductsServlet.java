@@ -2,6 +2,7 @@ package servlets;
 
 import DAO.DAOImpl;
 import entities.ProductsEntity;
+import exceptions.NotFoundException;
 import exceptions.OperationException;
 import exceptions.WrongArgumentException;
 import models.Person;
@@ -11,6 +12,7 @@ import util.Converter;
 import util.ExceptionsUtil;
 import util.Validator;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,7 +26,9 @@ public class ProductsServlet extends HttpServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        // добавление нового
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS,PUT,DELETE");
+        // добавление нового: POST /products
         Writer out = response.getWriter();
         BufferedReader reader = request.getReader();
         Product product;
@@ -49,6 +53,8 @@ public class ProductsServlet extends HttpServlet {
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS,PUT,DELETE");
         DAOImpl dao = new DAOImpl();
         response.setCharacterEncoding("UTF-8");
         Writer out = response.getWriter();
@@ -73,6 +79,10 @@ public class ProductsServlet extends HttpServlet {
                 response.setStatus(400);
                 out.write(e.getMessage());
             }
+            catch (NotFoundException e) {
+                response.setStatus(404);
+                out.write(e.getMessage());
+            }
             catch (JAXBException e) {
                 response.setStatus(500);
                 out.write(e.getMessage());
@@ -90,14 +100,27 @@ public class ProductsServlet extends HttpServlet {
                 String[] sortBy = request.getParameterValues("sort") == null
                         ? new String[]{}
                         : request.getParameterValues("sort");
-                Integer pageNumber = request.getParameter("page-number") == null
-                        ? null
-                        : Integer.valueOf(request.getParameter("page-number"));
-                Integer pageCapacity = request.getParameter("page-capacity") == null
-                        ? null
-                        : Integer.valueOf(request.getParameter("page-capacity"));
-                if (pageNumber != null && pageNumber < 1) throw new WrongArgumentException(ExceptionsUtil.getShouldBeGreaterException("page-number", "0"));
+                Integer pageNumber = null, pageCapacity = null;
+                try {
+                    if (request.getParameter("page-number") != null) {
+                        pageNumber = Integer.valueOf(request.getParameter("page-number"));
+                    }
+                }
+                catch (NumberFormatException e) {
+                    throw new OperationException(ExceptionsUtil.getWrongTypeException("page-number", "Integer"));
+                }
+                try {
+                    if (request.getParameter("page-number") != null) {
+                        pageCapacity = Integer.valueOf(request.getParameter("page-capacity"));
+                    }
+                }
+                catch (NumberFormatException e) {
+                    throw new OperationException(ExceptionsUtil.getWrongTypeException("page-capacity", "Integer"));
+                }
+
+                if (pageNumber != null && pageNumber < 1) throw new OperationException(ExceptionsUtil.getShouldBeGreaterException("page-number", "0"));
                 List<ProductsEntity> entities = dao.getProducts(request.getPathInfo(), pageNumber, pageCapacity, sortBy);
+                if (entities.size() == 0) throw  new WrongArgumentException(ExceptionsUtil.getNoElementFound());
                 ProductsList productsList = new ProductsList();
                 List<Product> list = new ArrayList<>();
                 for (ProductsEntity entity: entities) {
@@ -108,8 +131,12 @@ public class ProductsServlet extends HttpServlet {
                 Converter.modelToXmlWriter(productsList, out, ProductsList.class);
                 response.setStatus(200);
             }
-            catch (WrongArgumentException | OperationException e) {
+            catch (OperationException e) {
                 response.setStatus(400);
+                out.write(e.getMessage());
+            }
+            catch (WrongArgumentException e) {
+                response.setStatus(404);
                 out.write(e.getMessage());
             }
             catch (JAXBException e) {
@@ -122,6 +149,8 @@ public class ProductsServlet extends HttpServlet {
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS,PUT,DELETE");
         Writer out = response.getWriter();
         DAOImpl dao = new DAOImpl();
         BufferedReader reader = request.getReader();
@@ -151,9 +180,13 @@ public class ProductsServlet extends HttpServlet {
                 dao.deleteAllProductWithPerson(person);
                 response.setStatus(204);
             }
-            catch (WrongArgumentException | OperationException wa) {
+            catch (WrongArgumentException e) {
                 response.setStatus(400);
-                out.write(wa.getMessage());
+                out.write(e.getMessage());
+            }
+            catch ( OperationException e) {
+                response.setStatus(404);
+                out.write(e.getMessage());
             }
             catch (JAXBException | NullPointerException e) {
                 response.setStatus(400);
@@ -181,18 +214,22 @@ public class ProductsServlet extends HttpServlet {
         }
         else {
             response.setStatus(404);
-            out.write(ExceptionsUtil.getPageNotFoundException());
+            out.write(ExceptionsUtil.getNoElementFoundByGivenPath());
         }
     }
 
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        // обновление
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS,PUT,DELETE");
+        // обновление: PUT /products
         Product product;
         BufferedReader reader = request.getReader();
         Writer out = response.getWriter();
         try {
+            if (!(request.getPathInfo() == null || request.getPathInfo().equals("") || request.getPathInfo().equals("/")))
+                throw new WrongArgumentException(ExceptionsUtil.getPathParamsAreForbiddenException());
             product = Converter.xmlReaderToModel(reader, Product.class);
             Validator.validateProduct(product, true);
             DAOImpl dao = new DAOImpl();
@@ -210,5 +247,17 @@ public class ProductsServlet extends HttpServlet {
             response.setStatus(400);
             out.write(ExceptionsUtil.getInvalidDataException());
         }
+        catch (NotFoundException e) {
+            response.setStatus(404);
+            out.write(e.getMessage());
+        }
+    }
+
+    @Override
+    protected void doOptions(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS,PUT,DELETE");
+        response.setStatus(HttpServletResponse.SC_OK);
     }
 }

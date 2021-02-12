@@ -1,7 +1,9 @@
 package DAO;
 
 import entities.ProductsEntity;
+import exceptions.NotFoundException;
 import exceptions.OperationException;
+import exceptions.WrongArgumentException;
 import models.Person;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
@@ -13,17 +15,18 @@ import javax.persistence.EntityNotFoundException;
 import javax.persistence.criteria.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class DAOImpl {
     public ProductsEntity getProductById(long id)
-            throws OperationException {
+            throws OperationException, NotFoundException {
         Session session= HibernateUtil.getSessionFactory().openSession();
         session.beginTransaction();
         ProductsEntity productEntity = session.get(ProductsEntity.class, id);
         session.getTransaction().commit();
         session.close();
         if (productEntity == null) {
-            throw new OperationException(ExceptionsUtil.getEntityWithGivenIdDoesNotExist());
+            throw new NotFoundException(ExceptionsUtil.getEntityWithGivenIdDoesNotExist());
         }
         return productEntity;
 
@@ -38,7 +41,7 @@ public class DAOImpl {
     }
 
     public List<ProductsEntity> getProducts(String pathParams, Integer pageNumber, Integer pageCapacity, String[] sortBy)
-        throws OperationException{
+        throws OperationException, WrongArgumentException {
         Session session = HibernateUtil.getSessionFactory().openSession();
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<ProductsEntity> cr = cb.createQuery(ProductsEntity.class);
@@ -53,7 +56,13 @@ public class DAOImpl {
         List<Order> orders = new ArrayList<>();
         for(String column: sortBy) {
             try {
-                orders.add(cb.asc(root.get(column)));
+                Path<ProductsEntity> path = root.get(column.toLowerCase(Locale.ROOT).replace("-", ""));
+                if (column.startsWith("-")) {
+                    orders.add(cb.desc(path));
+                }
+                else {
+                    orders.add(cb.asc(path));
+                }
             }
             catch (Exception e) {
                 throw new OperationException(ExceptionsUtil.getInvalidOrderArgumentException(column));

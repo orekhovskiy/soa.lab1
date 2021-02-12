@@ -4,9 +4,12 @@
  * @version 1.0
  */
 package models;
+import adapters.LocalDateAdapter;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import  java.time.LocalDateTime;
 
 @XmlRootElement
@@ -76,28 +79,7 @@ public class Product {
      */
     private Person owner;
 
-    public Product() {
-        this.creationDate = LocalDateTime.now();
-    }
-
-    public Product(Long id,
-                   String name,
-                   Coordinates coordinates,
-                   LocalDateTime creationDate,
-                   Integer price,
-                   String partNumber,
-                   double manufactureCost,
-                   UnitOfMeasure unitOfMeasure,
-                   Person owner) {
-        this.id = id;
-        this.coordinates = coordinates;
-        this.creationDate = creationDate;
-        this.price = price;
-        this.partNumber = partNumber;
-        this.manufactureCost = manufactureCost;
-        this.unitOfMeasure = unitOfMeasure;
-        this.owner = owner;
-    }
+    public Product() { }
 
     public Long getId() {
         return id;
@@ -123,6 +105,7 @@ public class Product {
         this.coordinates = coordinates;
     }
 
+    @XmlJavaTypeAdapter(value = LocalDateAdapter.class)
     public LocalDateTime getCreationDate() {
         return creationDate;
     }

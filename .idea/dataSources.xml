@@ -17,5 +17,12 @@ C:/Users/anton/IdeaProjects/soa.lab1/src/main/java/hibernate.cfg.xml</remarks>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
       <jdbc-url>jdbc:postgresql://localhost:5432/soa</jdbc-url>
     </data-source>
+    <data-source source="LOCAL" name="studs@pg" uuid="774f1e15-7dd5-402a-9406-ad3f3b35f750">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://pg:5432/studs</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
