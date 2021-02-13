@@ -136,7 +136,6 @@ public class Converter {
             catch (Exception e) {
                 throw  new OperationException(ExceptionsUtil.getInvalidFilterArgumentException(pathParts[i]));
             }
-
         }
         return predicates;
     }

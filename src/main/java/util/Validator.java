@@ -10,11 +10,6 @@ import static util.ExceptionsUtil.*;
 public class Validator {
     public static void validateProduct(Product product, boolean toCheckId)
             throws WrongArgumentException {
-        // Coordinates
-        if (product.getCoordinates() == null)
-            throw new WrongArgumentException(getCouldNotBeNullException("Coordinates"));
-        if (product.getCoordinates().getX() <= -965)
-            throw new WrongArgumentException(getShouldBeGreaterException("Coordinates.X", "-965"));
 
         // Id
         if (toCheckId) {
@@ -29,6 +24,12 @@ public class Validator {
             throw new WrongArgumentException(getCouldNotBeNullException("Name"));
         if (product.getName().equals(""))
             throw new WrongArgumentException(getCouldNotBeEmptyException("Name"));
+
+        // Coordinates
+        if (product.getCoordinates() == null)
+            throw new WrongArgumentException(getCouldNotBeNullException("Coordinates"));
+        if (product.getCoordinates().getX() <= -965)
+            throw new WrongArgumentException(getShouldBeGreaterException("Coordinates.X", "-965"));
 
         // CreationDate
         if (product.getCreationDate() == null)
@@ -72,7 +73,7 @@ public class Validator {
                     owner.getWeight() <= 0)
                 throw new WrongArgumentException(getShouldBeGreaterException("Owner.Weight", "0"));
             if (owner.getNationality() == null)
-                throw new WrongArgumentException(getCouldNotBeNullException("Owner.Nationality"));
+                throw new WrongArgumentException(getEnumException("Owner.Nationality"));
         }
     }
 }

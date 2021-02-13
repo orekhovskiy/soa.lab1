@@ -39,6 +39,9 @@ public class ExceptionsUtil {
         return String.format("Order argument '%s' is invalid", argumentName);
     }
     public static String getPathParamsAreForbiddenException() {
-        return String.format("Path params are forbidden");
+        return "Path params are forbidden";
+    }
+    public static String getEnumException(String argumentName) {
+        return String.format("Value of the '%s' attribute is either null or has a unsupported value", argumentName);
     }
 }
