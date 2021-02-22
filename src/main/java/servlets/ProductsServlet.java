@@ -119,6 +119,7 @@ public class ProductsServlet extends HttpServlet {
                 }
 
                 if (pageNumber != null && pageNumber < 1) throw new OperationException(ExceptionsUtil.getShouldBeGreaterException("page-number", "0"));
+                if (pageCapacity != null && pageCapacity < 1) throw new OperationException(ExceptionsUtil.getShouldBeGreaterException("page-capacity", "0"));
                 List<ProductsEntity> entities = dao.getProducts(request.getPathInfo(), pageNumber, pageCapacity, sortBy);
                 if (entities.size() == 0) throw  new WrongArgumentException(ExceptionsUtil.getNoElementFound());
                 ProductsList productsList = new ProductsList();

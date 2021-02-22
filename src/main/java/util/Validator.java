@@ -52,7 +52,7 @@ public class Validator {
             ProductsEntity entity = dao.getProductByPartNumber(product.getPartNumber());
             if (entity != null && entity.getId() != product.getId())
                 throw new WrongArgumentException(getArgumentIsNotUniqueException("PartNumber"));
-        }
+       }
 
         // Owner
         validatePerson(product.getOwner());
@@ -61,17 +61,23 @@ public class Validator {
     public static void validatePerson(Person owner)
             throws WrongArgumentException{
         if (owner != null) {
+            // Location
             if (owner.getLocation() == null)
                 throw new WrongArgumentException(getCouldNotBeNullException("Owner.Location"));
             if (owner.getLocation().getY() == null)
                 throw new WrongArgumentException(getCouldNotBeNullException("Owner.Location.Y"));
+
+            // Name
             if (owner.getName() == null)
                 throw new WrongArgumentException(getCouldNotBeNullException("Owner.Name"));
             if (owner.getName().equals(""))
                 throw new WrongArgumentException(getCouldNotBeEmptyException("Owner.Name"));
-            if (owner.getWeight() != null &&
-                    owner.getWeight() <= 0)
+
+            // Weight
+            if (owner.getWeight() != null && owner.getWeight() <= 0)
                 throw new WrongArgumentException(getShouldBeGreaterException("Owner.Weight", "0"));
+
+            // Nationality
             if (owner.getNationality() == null)
                 throw new WrongArgumentException(getEnumException("Owner.Nationality"));
         }

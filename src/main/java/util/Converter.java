@@ -15,6 +15,7 @@ import javax.xml.bind.Unmarshaller;
 import java.io.BufferedReader;
 import java.io.Writer;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -126,12 +127,20 @@ public class Converter {
     public static List<Predicate> pathParamsToPredicates(String pathParams, CriteriaBuilder cb, Root<ProductsEntity> root)
     throws  OperationException, WrongArgumentException{
         if (pathParams == null || pathParams.equals("/")) return new ArrayList<>();
-        List<Predicate> predicates = new ArrayList<Predicate>();
+        List<Predicate> predicates = new ArrayList<>();
         String[] pathParts = pathParams.substring(1).split("/");
         if (pathParts.length % 2 != 0 || pathParts.length == 0) throw new WrongArgumentException(ExceptionsUtil.getNoElementFoundByGivenPath());
         for (int i = 0; i < pathParts.length; i+= 2) {
             try {
-                predicates.add(cb.equal(root.get(pathParts[i].toLowerCase(Locale.ROOT).replace("-", "")), pathParts[i + 1]));
+                String lhs = pathParts[i].toLowerCase(Locale.ROOT).replace("-", "");
+                String rhs = pathParts[i + 1];
+                if (lhs.equals("creationdate")) {
+                    LocalDateTime.parse(rhs);
+                    //rhs = String.valueOf(Timestamp.valueOf().getTime());
+                }
+                else {
+                    predicates.add(cb.equal(root.get(lhs), rhs));
+                }
             }
             catch (Exception e) {
                 throw  new OperationException(ExceptionsUtil.getInvalidFilterArgumentException(pathParts[i]));

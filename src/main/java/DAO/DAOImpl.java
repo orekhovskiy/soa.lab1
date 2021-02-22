@@ -13,6 +13,8 @@ import util.HibernateUtil;
 
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.criteria.*;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -78,7 +80,7 @@ public class DAOImpl {
         }
         List<ProductsEntity> results = query.getResultList();
         session.close();
-        return results;
+        return manualFilter(results, pathParams);
     }
 
     public void updateProduct(ProductsEntity entity) {
@@ -176,5 +178,27 @@ public class DAOImpl {
         session.delete(entity);
         session.getTransaction().commit();
         session.close();
+    }
+
+    private List<ProductsEntity> manualFilter(List<ProductsEntity> prefilter, String pathParams) {
+        List<ProductsEntity> result = new ArrayList<>();
+        if (pathParams == null || pathParams.equals("/")) return prefilter;
+        String[] pathParts = pathParams.substring(1).split("/");
+        boolean isFilteredByCreationDate = false;
+        for (int i = 0; i < pathParts.length; i+= 2) {
+            String lhs = pathParts[i].toLowerCase(Locale.ROOT).replace("-", "");
+            String rhs = pathParts[i + 1];
+            if (lhs.equals("creationdate")) {
+                isFilteredByCreationDate = true;
+                Timestamp by = Timestamp.valueOf(LocalDateTime.parse(rhs));
+                for (ProductsEntity productsEntity : prefilter) {
+                    Timestamp to = productsEntity.getCreationdate();
+                    if (by.equals(to)) {
+                        result.add(productsEntity);
+                    }
+                }
+            }
+        }
+        return isFilteredByCreationDate? result : prefilter;
     }
 }
