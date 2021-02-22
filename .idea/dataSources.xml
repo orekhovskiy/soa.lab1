@@ -12,7 +12,6 @@
       <synchronize>true</synchronize>
       <imported>true</imported>
       <remarks>Hibernate
-
 C:/Users/anton/IdeaProjects/soa.lab1/src/main/java/hibernate.cfg.xml</remarks>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
       <jdbc-url>jdbc:postgresql://localhost:5432/soa</jdbc-url>
