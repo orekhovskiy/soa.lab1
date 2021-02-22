@@ -24,6 +24,7 @@
         <url-pattern>/nope</url-pattern>
         <dispatcher>FORWARD</dispatcher>
     </filter-mapping>-->
+    
     <servlet>
         <servlet-name>ProductsServlet</servlet-name>
         <servlet-class>servlets.ProductsServlet</servlet-class>
