@@ -13,7 +13,9 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import java.io.BufferedReader;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -124,26 +126,29 @@ public class Converter {
         marshaller.marshal(model, writer);
     }
 
-    public static List<Predicate> pathParamsToPredicates(String pathParams, CriteriaBuilder cb, Root<ProductsEntity> root)
+    public static List<Predicate> queryStringToPredicates(String queryString, CriteriaBuilder cb, Root<ProductsEntity> root)
     throws  OperationException, WrongArgumentException{
-        if (pathParams == null || pathParams.equals("/")) return new ArrayList<>();
+        if (queryString == null || queryString.equals("")) return new ArrayList<>();
         List<Predicate> predicates = new ArrayList<>();
-        String[] pathParts = pathParams.substring(1).split("/");
-        if (pathParts.length % 2 != 0 || pathParts.length == 0) throw new WrongArgumentException(ExceptionsUtil.getNoElementFoundByGivenPath());
-        for (int i = 0; i < pathParts.length; i+= 2) {
+        String[] parts = queryString.split("&");
+        for (String part: parts) {
+            String lhs = null;
             try {
-                String lhs = pathParts[i].toLowerCase(Locale.ROOT).replace("-", "");
-                String rhs = pathParts[i + 1];
-                if (lhs.equals("creationdate")) {
-                    LocalDateTime.parse(rhs);
-                    //rhs = String.valueOf(Timestamp.valueOf().getTime());
+                String[] filter = part.split("=");
+                lhs = filter[0].toLowerCase(Locale.ROOT).replace("-", "");
+                String rhs = java.net.URLDecoder.decode(filter[1], StandardCharsets.UTF_8.name());
+                if (rhs.equals("") && filter.length == 3 && filter[2].equals("null")) {
+                    rhs = null;
                 }
-                else {
+                if (!lhs.equals("page-capacity") && !lhs.equals("page-number") && !lhs.equals("sort")) {
                     predicates.add(cb.equal(root.get(lhs), rhs));
                 }
             }
+            catch (UnsupportedEncodingException e) {
+                throw new OperationException(ExceptionsUtil.getDecodeException());
+            }
             catch (Exception e) {
-                throw  new OperationException(ExceptionsUtil.getInvalidFilterArgumentException(pathParts[i]));
+                throw  new OperationException(ExceptionsUtil.getInvalidFilterArgumentException(lhs));
             }
         }
         return predicates;

@@ -44,4 +44,7 @@ public class ExceptionsUtil {
     public static String getEnumException(String argumentName) {
         return String.format("Value of the '%s' attribute is either null or has a unsupported value", argumentName);
     }
+    public static String getDecodeException() {
+        return "Unable to decode.";
+    }
 }

@@ -35,7 +35,7 @@ public class ProductsServlet extends HttpServlet {
         try {
             product = Converter.xmlReaderToModel(reader, Product.class);
             product.setCreationDate(LocalDateTime.now());
-            Validator.validateProduct(product, false);
+            Validator.validateProduct(product, null);
             ProductsEntity productsEntity = Converter.modelToEntity(product);
             DAOImpl dao = new DAOImpl();
             dao.addProduct(productsEntity);
@@ -58,12 +58,16 @@ public class ProductsServlet extends HttpServlet {
         DAOImpl dao = new DAOImpl();
         response.setCharacterEncoding("UTF-8");
         Writer out = response.getWriter();
-        // получение по ид: GET /products/id/{id}
-        if (request.getPathInfo() != null &&
-            request.getPathInfo().startsWith("/id/") &&
-            request.getPathInfo().length() - request.getPathInfo().replace("/", "").length() == 2) {
+        // расчет средней цены производителя : GET /products/manufacture-cost/average
+        if (request.getPathInfo() != null && request.getPathInfo().equals("/manufacture-cost/average")) {
+            response.setStatus(200);
+            out.write(String.valueOf(dao.getAverageManufactureCost()));
+        }
+        // получение по ид: GET /products/{id}
+        else if (request.getPathInfo() != null &&
+                request.getPathInfo().startsWith("/")) {
             try {
-                String idPart = request.getPathInfo().substring(4);
+                String idPart = request.getPathInfo().substring(1);
                 long id = Long.parseLong(idPart);
                 ProductsEntity entity = dao.getProductById(id);
                 Product model = Converter.entityToModel(entity);
@@ -75,10 +79,6 @@ public class ProductsServlet extends HttpServlet {
                 response.setStatus(400);
                 out.write(ExceptionsUtil.getWrongTypeException("Id", "int"));
             }
-            catch (OperationException e) {
-                response.setStatus(400);
-                out.write(e.getMessage());
-            }
             catch (NotFoundException e) {
                 response.setStatus(404);
                 out.write(e.getMessage());
@@ -87,12 +87,6 @@ public class ProductsServlet extends HttpServlet {
                 response.setStatus(500);
                 out.write(e.getMessage());
             }
-        }
-        // расчет средней цены производителя : GET /products/manufacture-cost/average
-        else if (request.getPathInfo() != null &&
-                 request.getPathInfo().equals("/manufacture-cost/average")) {
-            response.setStatus(200);
-            out.write(String.valueOf(dao.getAverageManufactureCost()));
         }
         // получение всех: GET /products
         else {
@@ -120,7 +114,7 @@ public class ProductsServlet extends HttpServlet {
 
                 if (pageNumber != null && pageNumber < 1) throw new OperationException(ExceptionsUtil.getShouldBeGreaterException("page-number", "0"));
                 if (pageCapacity != null && pageCapacity < 1) throw new OperationException(ExceptionsUtil.getShouldBeGreaterException("page-capacity", "0"));
-                List<ProductsEntity> entities = dao.getProducts(request.getPathInfo(), pageNumber, pageCapacity, sortBy);
+                List<ProductsEntity> entities = dao.getProducts(request.getQueryString(), pageNumber, pageCapacity, sortBy);
                 if (entities.size() == 0) throw  new WrongArgumentException(ExceptionsUtil.getNoElementFound());
                 ProductsList productsList = new ProductsList();
                 List<Product> list = new ArrayList<>();
@@ -155,25 +149,8 @@ public class ProductsServlet extends HttpServlet {
         Writer out = response.getWriter();
         DAOImpl dao = new DAOImpl();
         BufferedReader reader = request.getReader();
-        // удаление: DELETE /products/id/{id}
-        if (request.getPathInfo() != null && request.getPathInfo().startsWith("/id/")) {
-            String idPart = request.getPathInfo().substring(4);
-            try {
-                long id = Long.parseLong(idPart);
-                dao.deleteProductById(id);
-                response.setStatus(204);
-            }
-            catch (NumberFormatException numberFormatException) {
-                response.setStatus(400);
-                out.write(ExceptionsUtil.getWrongTypeException("Id", "int"));
-            }
-            catch (OperationException operationException) {
-                response.setStatus(404);
-                out.write(operationException.getMessage());
-            }
-        }
         // удаление всех где есть овнер: DELETE /products/owner (в боди объект)
-        else if (request.getPathInfo() != null && request.getPathInfo().equals("/owner")) {
+        if (request.getPathInfo() != null && request.getPathInfo().equals("/owner")) {
             Person person;
             try {
                 person = Converter.xmlReaderToModel(reader, Person.class);
@@ -213,6 +190,22 @@ public class ProductsServlet extends HttpServlet {
                 out.write(operationException.getMessage());
             }
         }
+        // удаление: DELETE /products/{id}
+        if (request.getPathInfo() != null ) {
+            try {
+                long id = Long.parseLong(request.getPathInfo().substring(1));
+                dao.deleteProductById(id);
+                response.setStatus(204);
+            }
+            catch (NumberFormatException numberFormatException) {
+                response.setStatus(400);
+                out.write(ExceptionsUtil.getWrongTypeException("Id", "int"));
+            }
+            catch (OperationException operationException) {
+                response.setStatus(404);
+                out.write(operationException.getMessage());
+            }
+        }
         else {
             response.setStatus(404);
             out.write(ExceptionsUtil.getNoElementFoundByGivenPath());
@@ -224,23 +217,27 @@ public class ProductsServlet extends HttpServlet {
             throws IOException {
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS,PUT,DELETE");
-        // обновление: PUT /products
+        // обновление: PUT /products/{id}
         Product product;
         BufferedReader reader = request.getReader();
         Writer out = response.getWriter();
         try {
-            if (!(request.getPathInfo() == null || request.getPathInfo().equals("") || request.getPathInfo().equals("/")))
-                throw new WrongArgumentException(ExceptionsUtil.getPathParamsAreForbiddenException());
+            long id = Long.parseLong(request.getPathInfo().substring(1));
             product = Converter.xmlReaderToModel(reader, Product.class);
-            Validator.validateProduct(product, true);
+            Validator.validateProduct(product, id);
             DAOImpl dao = new DAOImpl();
-            dao.getProductById(product.getId());
+            ProductsEntity foundById = dao.getProductById(id);
+
             ProductsEntity productsEntity = Converter.modelToEntity(product);
             dao.updateProduct(productsEntity);
             response.setStatus(204);
 
         }
-        catch (WrongArgumentException | OperationException e) {
+        catch (NumberFormatException e) {
+            response.setStatus(400);
+            out.write(ExceptionsUtil.getWrongTypeException("Id", "Long"));
+        }
+        catch (WrongArgumentException e) {
             response.setStatus(400);
             out.write(e.getMessage());
         }

@@ -2,23 +2,35 @@ package util;
 
 import DAO.DAOImpl;
 import entities.ProductsEntity;
+import exceptions.NotFoundException;
+import exceptions.OperationException;
 import exceptions.WrongArgumentException;
 import models.Person;
 import models.Product;
 import static util.ExceptionsUtil.*;
 
 public class Validator {
-    public static void validateProduct(Product product, boolean toCheckId)
+    public static void validateProduct(Product product, Long id)
             throws WrongArgumentException {
-
         // Id
-        if (toCheckId) {
+        if (id != null) {
             if (product.getId() == null)
                 throw new WrongArgumentException(getCouldNotBeNullException("Id"));
             if (product.getId() <= 0)
                 throw new WrongArgumentException(getShouldBeGreaterException("Id", "0"));
+            if (!product.getId().equals(id)) {
+                boolean isIdUnique = false;
+                try {
+                    DAOImpl dao = new DAOImpl();
+                    dao.getProductById(id);
+                } catch (NotFoundException e) {
+                    isIdUnique = true;
+                }
+                if (!isIdUnique) {
+                    throw new WrongArgumentException(getArgumentIsNotUniqueException("Id"));
+                }
+            }
         }
-
         // Name
         if (product.getName() == null)
             throw new WrongArgumentException(getCouldNotBeNullException("Name"));
@@ -40,26 +52,24 @@ public class Validator {
             throw new WrongArgumentException(getShouldBeGreaterException("Price", "0"));
 
         // PartNumber
-        if (product.getPartNumber() != null &&
-            product.getPartNumber().length() <= 26)
+        if (product.getPartNumber() != null && product.getPartNumber().length() <= 26)
             throw new WrongArgumentException(getShouldBeGreaterException("PartNumber.length()", "26"));
         DAOImpl dao = new DAOImpl();
-        if (!toCheckId) {
+        // unique
+        if (id == null) {
             if (dao.getProductByPartNumber(product.getPartNumber()) != null)
                 throw new WrongArgumentException(getArgumentIsNotUniqueException("PartNumber"));
-        }
-        else {
+        } else {
             ProductsEntity entity = dao.getProductByPartNumber(product.getPartNumber());
             if (entity != null && entity.getId() != product.getId())
                 throw new WrongArgumentException(getArgumentIsNotUniqueException("PartNumber"));
-       }
+        }
 
         // Owner
         validatePerson(product.getOwner());
     }
-
     public static void validatePerson(Person owner)
-            throws WrongArgumentException{
+            throws WrongArgumentException {
         if (owner != null) {
             // Location
             if (owner.getLocation() == null)

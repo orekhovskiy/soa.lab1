@@ -13,6 +13,8 @@ import util.HibernateUtil;
 
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.criteria.*;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,7 +23,7 @@ import java.util.Locale;
 
 public class DAOImpl {
     public ProductsEntity getProductById(long id)
-            throws OperationException, NotFoundException {
+            throws  NotFoundException {
         Session session= HibernateUtil.getSessionFactory().openSession();
         session.beginTransaction();
         ProductsEntity productEntity = session.get(ProductsEntity.class, id);
@@ -42,13 +44,13 @@ public class DAOImpl {
         session.close();
     }
 
-    public List<ProductsEntity> getProducts(String pathParams, Integer pageNumber, Integer pageCapacity, String[] sortBy)
+    public List<ProductsEntity> getProducts(String filter, Integer pageNumber, Integer pageCapacity, String[] sortBy)
         throws OperationException, WrongArgumentException {
         Session session = HibernateUtil.getSessionFactory().openSession();
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<ProductsEntity> cr = cb.createQuery(ProductsEntity.class);
         Root<ProductsEntity> root = cr.from(ProductsEntity.class);
-        List<Predicate> predicates = Converter.pathParamsToPredicates(pathParams, cb, root);
+        List<Predicate> predicates = Converter.queryStringToPredicates(filter, cb, root);
         if (predicates.size() != 0) {
             cr.select(root).where(predicates.toArray(new Predicate[0]));
         }
@@ -80,7 +82,7 @@ public class DAOImpl {
         }
         List<ProductsEntity> results = query.getResultList();
         session.close();
-        return manualFilter(results, pathParams);
+        return manualFilter(results, filter);
     }
 
     public void updateProduct(ProductsEntity entity) {
@@ -180,14 +182,21 @@ public class DAOImpl {
         session.close();
     }
 
-    private List<ProductsEntity> manualFilter(List<ProductsEntity> prefilter, String pathParams) {
+    private List<ProductsEntity> manualFilter(List<ProductsEntity> prefilter, String params) throws OperationException {
         List<ProductsEntity> result = new ArrayList<>();
-        if (pathParams == null || pathParams.equals("/")) return prefilter;
-        String[] pathParts = pathParams.substring(1).split("/");
+        if (params == null || params.equals("")) return prefilter;
+        String[] parts = params.split("&");
         boolean isFilteredByCreationDate = false;
-        for (int i = 0; i < pathParts.length; i+= 2) {
-            String lhs = pathParts[i].toLowerCase(Locale.ROOT).replace("-", "");
-            String rhs = pathParts[i + 1];
+        for (String part : parts) {
+            String[] filter = part.split("=");
+            String lhs = filter[0].toLowerCase(Locale.ROOT).replace("-", "");
+            String rhs = null;
+            try {
+                rhs =  java.net.URLDecoder.decode(filter[1], StandardCharsets.UTF_8.name());
+            }
+            catch (UnsupportedEncodingException e) {
+                throw new OperationException(ExceptionsUtil.getDecodeException());
+            }
             if (lhs.equals("creationdate")) {
                 isFilteredByCreationDate = true;
                 Timestamp by = Timestamp.valueOf(LocalDateTime.parse(rhs));
