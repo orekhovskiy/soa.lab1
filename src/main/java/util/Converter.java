@@ -140,7 +140,7 @@ public class Converter {
                 if (rhs.equals("") && filter.length == 3 && filter[2].equals("null")) {
                     rhs = null;
                 }
-                if (!lhs.equals("page-capacity") && !lhs.equals("page-number") && !lhs.equals("sort")) {
+                if (!lhs.equals("pagecapacity") && !lhs.equals("pagenumber") && !lhs.equals("sort") && !lhs.equals("creationdate")) {
                     predicates.add(cb.equal(root.get(lhs), rhs));
                 }
             }
