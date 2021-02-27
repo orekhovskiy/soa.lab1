@@ -127,7 +127,7 @@ public class Converter {
     }
 
     public static List<Predicate> queryStringToPredicates(String queryString, CriteriaBuilder cb, Root<ProductsEntity> root)
-    throws  OperationException, WrongArgumentException{
+    throws  OperationException{
         if (queryString == null || queryString.equals("")) return new ArrayList<>();
         List<Predicate> predicates = new ArrayList<>();
         String[] parts = queryString.split("&");

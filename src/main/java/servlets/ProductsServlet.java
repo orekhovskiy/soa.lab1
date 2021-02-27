@@ -224,6 +224,8 @@ public class ProductsServlet extends HttpServlet {
         try {
             long id = Long.parseLong(request.getPathInfo().substring(1));
             product = Converter.xmlReaderToModel(reader, Product.class);
+            product.setId(id);
+            product.setCreationDate(LocalDateTime.now());
             Validator.validateProduct(product, id);
             DAOImpl dao = new DAOImpl();
             ProductsEntity foundById = dao.getProductById(id);

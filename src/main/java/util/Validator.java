@@ -22,7 +22,7 @@ public class Validator {
                 boolean isIdUnique = false;
                 try {
                     DAOImpl dao = new DAOImpl();
-                    dao.getProductById(id);
+                    dao.getProductById(product.getId());
                 } catch (NotFoundException e) {
                     isIdUnique = true;
                 }
